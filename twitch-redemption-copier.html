@@ -6,14 +6,14 @@
 <title>チャンネルポイント交換ビューア</title>
 <style>
   :root{
-    --bg:#0d0c14;
-    --panel:#161420;
-    --panel-2:#1d1a29;
-    --border:#2c2838;
-    --text:#eeecf5;
-    --text-dim:#8d87a0;
+    --bg:#181818;
+    --panel:#212121;
+    --panel-2:#2a2a2a;
+    --border:#3a3a3a;
+    --text:#e7e7e7;
+    --text-dim:#8a8a8a;
     --accent:#7c5cff;
-    --accent-dim:#4c3d99;
+    --accent-dim:#3d3467;
     --ok:#4ee6a3;
     --warn:#f2b84b;
     --err:#ff6b6b;
@@ -21,147 +21,170 @@
     --sans: -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   }
   *{box-sizing:border-box;}
+  html, body{height:100%;}
   body{
-    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
-    font-family:var(--sans); padding:32px 20px 60px;
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:12.5px;
+    display:flex; flex-direction:column; overflow:hidden;
   }
-  .wrap{max-width:760px; margin:0 auto;}
-  header{margin-bottom:28px;}
-  header h1{font-size:20px; font-weight:600; margin:0 0 6px;}
-  header p{color:var(--text-dim); font-size:13.5px; margin:0; line-height:1.6;}
 
-  .panel{
-    background:var(--panel); border:1px solid var(--border); border-radius:10px;
-    padding:20px; margin-bottom:16px;
+  /* --- 上部バー --- */
+  .topbar{
+    flex:none; display:flex; align-items:center; gap:8px;
+    padding:8px 10px; border-bottom:1px solid var(--border); background:var(--panel);
   }
-  .step{display:flex; gap:14px;}
-  .step-num{
-    flex:none; width:24px; height:24px; border-radius:50%;
-    background:var(--panel-2); border:1px solid var(--border);
-    display:flex; align-items:center; justify-content:center;
-    font-size:12px; color:var(--text-dim); font-family:var(--mono);
+  .topbar .status{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--text-dim);}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--text-dim); flex:none;}
+  .dot.on{background:var(--ok); box-shadow:0 0 0 3px rgba(78,230,163,.15);}
+  .dot.err{background:var(--err);}
+  .dot.pending{background:var(--warn);}
+  .topbar .spacer{flex:1;}
+  .iconbtn{
+    flex:none; width:26px; height:26px; padding:0; border-radius:6px;
+    background:transparent; border:1px solid transparent; color:var(--text-dim);
+    font-size:14px; display:flex; align-items:center; justify-content:center;
   }
-  .step.done .step-num{background:var(--accent); color:#fff; border-color:var(--accent);}
-  .step-body{flex:1; min-width:0;}
-  .step-body label{display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;}
-  .step-body .hint{font-size:12px; color:var(--text-dim); margin-top:6px; line-height:1.6;}
+  .iconbtn:hover{background:var(--panel-2); color:var(--text); border-color:var(--border);}
 
-  input[type=text]{
+  /* --- 設定パネル(折りたたみ可能) --- */
+  #settingsPanel{
+    flex:none; background:var(--panel); border-bottom:1px solid var(--border);
+    padding:10px; display:flex; flex-direction:column; gap:10px;
+  }
+  #settingsPanel.collapsed{display:none;}
+  .field label{display:block; font-size:10.5px; color:var(--text-dim); margin-bottom:4px; letter-spacing:.02em;}
+  select, input[type=text]{
     width:100%; background:var(--panel-2); border:1px solid var(--border);
-    color:var(--text); padding:9px 11px; border-radius:7px; font-size:13.5px;
+    color:var(--text); padding:6px 8px; border-radius:6px; font-size:12px;
     font-family:var(--mono);
   }
-  input[type=text]:focus{outline:none; border-color:var(--accent);}
+  select:focus, input[type=text]:focus{outline:none; border-color:var(--accent);}
+  select:disabled{opacity:.5;}
+  .hint{font-size:10.5px; color:var(--text-dim); margin-top:4px; line-height:1.5;}
+  .who{font-size:11px; color:var(--text-dim); font-family:var(--mono);}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
 
   button{
-    font-family:var(--sans); font-size:13.5px; font-weight:600; cursor:pointer;
-    border-radius:7px; border:1px solid transparent; padding:9px 16px;
+    font-family:var(--sans); font-size:12px; font-weight:600; cursor:pointer;
+    border-radius:6px; border:1px solid transparent; padding:6px 12px;
     transition:opacity .15s;
   }
   button:hover{opacity:.88;}
   button:disabled{opacity:.4; cursor:not-allowed;}
   .btn-primary{background:var(--accent); color:#fff;}
   .btn-ghost{background:transparent; border-color:var(--border); color:var(--text);}
-  .btn-copy{background:var(--panel-2); border-color:var(--border); color:var(--accent); font-family:var(--mono); font-size:12.5px; padding:6px 12px;}
-  .btn-copy.copied{background:var(--ok); border-color:var(--ok); color:#0d0c14;}
+  .log{font-family:var(--mono); font-size:10px; color:var(--text-dim); line-height:1.6; white-space:pre-wrap; max-height:70px; overflow-y:auto;}
 
-  .row{display:flex; gap:10px; align-items:center; margin-top:10px;}
-
-  .status{
-    display:flex; align-items:center; gap:8px; font-size:13px; font-family:var(--mono);
+  /* --- コピー全体ボタン --- */
+  .toolbar{flex:none; padding:8px 10px; border-bottom:1px solid var(--border); background:var(--bg);}
+  .btn-copyall{
+    width:100%; background:var(--accent-dim); border:1px solid var(--accent); color:#fff;
+    padding:8px; font-size:11.5px;
   }
-  .dot{width:8px; height:8px; border-radius:50%; background:var(--text-dim);}
-  .dot.on{background:var(--ok); box-shadow:0 0 0 3px rgba(78,230,163,.15);}
-  .dot.err{background:var(--err);}
-  .dot.pending{background:var(--warn);}
+  .btn-copyall.copied{background:var(--ok); border-color:var(--ok); color:#111;}
+  .btn-copyall:disabled{opacity:.35;}
 
+  /* --- 交換一覧(スクロール領域) --- */
+  .feedwrap{flex:1; overflow-y:auto; padding:8px 10px;}
   .feed{list-style:none; margin:0; padding:0;}
   .feed li{
-    border:1px solid var(--border); border-radius:9px; padding:14px 16px;
-    margin-bottom:10px; background:var(--panel-2);
+    border:1px solid var(--border); border-radius:8px; padding:8px 10px;
+    margin-bottom:8px; background:var(--panel);
   }
-  .feed .meta{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
-  .feed .user{font-weight:600; font-size:14px;}
-  .feed .time{font-size:11px; color:var(--text-dim); font-family:var(--mono);}
+  .feed .meta{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; gap:8px;}
+  .feed .user{font-weight:600; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .feed .time{font-size:10px; color:var(--text-dim); font-family:var(--mono); flex:none;}
   .feed .text{
-    font-family:var(--mono); font-size:13.5px; line-height:1.6; color:var(--text);
-    white-space:pre-wrap; word-break:break-word; margin-bottom:10px;
+    font-family:var(--mono); font-size:12px; line-height:1.5; color:var(--text);
+    white-space:pre-wrap; word-break:break-word; margin-bottom:7px;
   }
-  .empty{color:var(--text-dim); font-size:13px; text-align:center; padding:30px 0; font-family:var(--mono);}
-  .log{font-family:var(--mono); font-size:11.5px; color:var(--text-dim); margin-top:8px; line-height:1.7;}
+  .btn-copy{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--accent);
+    font-family:var(--mono); font-size:10.5px; padding:4px 9px;
+  }
+  .btn-copy.copied{background:var(--ok); border-color:var(--ok); color:#111;}
+  .empty{color:var(--text-dim); font-size:11.5px; text-align:center; padding:24px 0; font-family:var(--mono);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>チャンネルポイント交換ビューア</h1>
-    <p>指定したリワードが交換されたら、ユーザー名と入力テキストを一覧表示。ボタンでクリップボードにコピーできます。</p>
-  </header>
 
-  <div class="panel">
-    <div class="step" id="step2">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <label>対象のリワード名(チャンネルポイントの交換タイトル)</label>
-        <input type="text" id="rewardTitle" placeholder="例: コメントを読んでもらう">
-        <div class="hint">このタイトルと完全一致(前後の空白は無視・大文字小文字は区別しません)した交換だけを表示します。</div>
-      </div>
-    </div>
+  <div class="topbar">
+    <span class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">未接続</span>
+    </span>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="gearBtn" title="設定">⚙</button>
   </div>
 
-  <div class="panel">
-    <div class="step" id="step3">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <label>Twitchでログイン</label>
-        <div class="row">
-          <button class="btn-primary" id="loginBtn">Twitchでログイン</button>
-          <button class="btn-ghost" id="logoutBtn" style="display:none;">ログアウト</button>
-        </div>
-        <div class="status" style="margin-top:12px;">
-          <span class="dot" id="statusDot"></span>
-          <span id="statusText">未接続</span>
-        </div>
-        <div class="log" id="logArea"></div>
+  <div id="settingsPanel">
+    <div class="field">
+      <label>アカウント</label>
+      <div class="row">
+        <button class="btn-primary" id="loginBtn">Twitchでログイン</button>
+        <button class="btn-ghost" id="logoutBtn" style="display:none;">ログアウト</button>
       </div>
+      <div class="who" id="whoAmI" style="margin-top:6px;"></div>
     </div>
+
+    <div class="field">
+      <label>対象のリワード</label>
+      <select id="rewardSelect" disabled>
+        <option value="">-- 先にログインしてください --</option>
+      </select>
+      <div class="hint">「(テキスト入力なし)」はテキスト入力が設定されていないリワードです。</div>
+    </div>
+
+    <div class="log" id="logArea"></div>
   </div>
 
-  <div class="panel">
-    <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:12px;">受信した交換</label>
+  <div class="toolbar">
+    <button class="btn-copyall" id="copyAllBtn" disabled>すべてコピー</button>
+  </div>
+
+  <div class="feedwrap">
     <ul class="feed" id="feed"></ul>
     <div class="empty" id="emptyMsg">まだ交換はありません</div>
   </div>
-</div>
 
 <script>
 // ==== 運営者が最初に1回だけ設定する項目 ====
 // dev.twitch.tv/console で発行したClient IDをここに埋め込む。
-// このファイルを配置する固定URL(下記REDIRECT_URIに表示される値)を
+// このファイルを配置する固定URL(下記REDIRECT_URI)を
 // Twitchアプリの「OAuth Redirect URLs」に登録しておくこと。
 const CLIENT_ID = '1wfdr29bx3owx5fheul1om2a5c0oka';
 // ============================================
 
 const REDIRECT_URI = location.origin + location.pathname;
+const LS_ACCOUNT = 'twpc_account';       // { id, login, display_name, token }
+const LS_REWARD_ID = 'twpc_reward_id';   // 選択中のリワードID
 
 const els = {
-  rewardTitle: document.getElementById('rewardTitle'),
   loginBtn: document.getElementById('loginBtn'),
   logoutBtn: document.getElementById('logoutBtn'),
+  whoAmI: document.getElementById('whoAmI'),
+  rewardSelect: document.getElementById('rewardSelect'),
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
   logArea: document.getElementById('logArea'),
   feed: document.getElementById('feed'),
   emptyMsg: document.getElementById('emptyMsg'),
-  step2: document.getElementById('step2'),
-  step3: document.getElementById('step3'),
+  copyAllBtn: document.getElementById('copyAllBtn'),
+  gearBtn: document.getElementById('gearBtn'),
+  settingsPanel: document.getElementById('settingsPanel'),
 };
 
 let state = {
   token: null,
   broadcasterId: null,
   ws: null,
+  rewards: [],
 };
+let feedItems = []; // {user, text} 新しい順
 
 function log(msg){
   const t = new Date().toLocaleTimeString('ja-JP');
@@ -174,18 +197,31 @@ function setStatus(kind, text){
   els.statusText.textContent = text;
 }
 
-els.rewardTitle.addEventListener('input', () => {
-  els.step2.classList.toggle('done', !!els.rewardTitle.value.trim());
+// ---- 設定パネルの開閉 ----
+els.gearBtn.addEventListener('click', () => {
+  els.settingsPanel.classList.toggle('collapsed');
 });
+function collapseSettings(){ els.settingsPanel.classList.add('collapsed'); }
+function expandSettings(){ els.settingsPanel.classList.remove('collapsed'); }
 
-// --- ログイン(Implicit Grant Flow。Client IDは埋め込み済みなので入力不要) ---
+// ---- localStorage ヘルパー(アカウントは1つだけ保持) ----
+function loadAccount(){
+  try{ return JSON.parse(localStorage.getItem(LS_ACCOUNT) || 'null'); }catch(e){ return null; }
+}
+function saveAccount(account){
+  localStorage.setItem(LS_ACCOUNT, JSON.stringify(account));
+}
+function clearAccount(){
+  localStorage.removeItem(LS_ACCOUNT);
+  localStorage.removeItem(LS_REWARD_ID);
+}
+
+// ---- ログイン(Implicit Grant Flow。Client IDは埋め込み済みなので入力不要) ----
 els.loginBtn.addEventListener('click', () => {
   if(CLIENT_ID === 'YOUR_CLIENT_ID_HERE'){
     alert('コード内のCLIENT_IDが未設定です。運営者に連絡してください。');
     return;
   }
-  if(!els.rewardTitle.value.trim()){ alert('先に対象のリワード名を入力してください'); return; }
-  saveRewardTitleAcrossRedirect(els.rewardTitle.value.trim());
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
@@ -195,52 +231,65 @@ els.loginBtn.addEventListener('click', () => {
   location.href = 'https://id.twitch.tv/oauth2/authorize?' + params.toString();
 });
 
-// リワード名だけ、リダイレクトをまたいで引き継ぐ(localStorage/sessionStorageは使わず、
-// タブ内で完結するwindow.nameに一時保存する)
-function saveRewardTitleAcrossRedirect(rewardTitle){
-  window.name = JSON.stringify({rewardTitle});
-}
-function loadRewardTitleAcrossRedirect(){
-  try{ return JSON.parse(window.name || '{}'); }catch(e){ return {}; }
-}
-
 els.logoutBtn.addEventListener('click', () => {
   if(state.ws) state.ws.close();
-  state = {token:null, broadcasterId:null, ws:null};
+  state = {token:null, broadcasterId:null, ws:null, rewards:[]};
+  clearAccount();
   els.loginBtn.style.display = '';
   els.logoutBtn.style.display = 'none';
-  els.step3.classList.remove('done');
+  els.whoAmI.textContent = '';
+  els.rewardSelect.disabled = true;
+  els.rewardSelect.innerHTML = '<option value="">-- 先にログインしてください --</option>';
   setStatus('', '未接続');
+  expandSettings();
 });
 
-// --- リダイレクト後、hashからトークンを取り出す ---
+// ---- リダイレクト後、hashからトークンを取り出す。なければ保存済みアカウントで自動ログイン ----
 async function handleRedirect(){
   const hash = location.hash.startsWith('#') ? location.hash.slice(1) : '';
   const hashParams = new URLSearchParams(hash);
   const token = hashParams.get('access_token');
-  if(!token) return;
+
+  if(!token){
+    const saved = loadAccount();
+    if(saved){ await loginWithAccount(saved); }
+    else{ expandSettings(); }
+    return;
+  }
 
   history.replaceState(null, '', REDIRECT_URI); // URLからトークンを消す
-
-  const saved = loadRewardTitleAcrossRedirect();
-  if(saved.rewardTitle) els.rewardTitle.value = saved.rewardTitle;
-  els.step2.classList.toggle('done', !!els.rewardTitle.value.trim());
-
-  state.token = token;
-
   setStatus('pending', 'ユーザー情報を取得中...');
   try{
     const user = await getMe(token);
-    state.broadcasterId = user.id;
+    const account = { id: user.id, login: user.login, display_name: user.display_name, token };
+    saveAccount(account);
     log(`ログイン成功: ${user.display_name} (id:${user.id})`);
-    els.loginBtn.style.display = 'none';
-    els.logoutBtn.style.display = '';
-    els.step3.classList.add('done');
-    connectEventSub();
+    await loginWithAccount(account);
   }catch(e){
     setStatus('err', 'ログインに失敗しました');
     log('エラー: ' + e.message);
+    expandSettings();
   }
+}
+
+async function loginWithAccount(account){
+  setStatus('pending', account.display_name + ' として確認中...');
+  try{
+    await getMe(account.token); // トークンが生きているか検証
+  }catch(e){
+    log(`保存済みトークンが無効です(再ログインが必要): ${e.message}`);
+    setStatus('err', '再ログインが必要です');
+    clearAccount();
+    expandSettings();
+    return;
+  }
+  state.token = account.token;
+  state.broadcasterId = account.id;
+  els.loginBtn.style.display = 'none';
+  els.logoutBtn.style.display = '';
+  els.whoAmI.textContent = account.display_name + ' としてログイン中';
+
+  await loadRewards(account.id);
 }
 
 async function getMe(token){
@@ -253,8 +302,65 @@ async function getMe(token){
   return data.data[0];
 }
 
+// ---- リワード一覧を取得してプルダウンに表示 ----
+async function loadRewards(broadcasterId){
+  setStatus('pending', 'リワード一覧を取得中...');
+  els.rewardSelect.disabled = true;
+  els.rewardSelect.innerHTML = '<option value="">読み込み中...</option>';
+  try{
+    const res = await fetch(`https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=${broadcasterId}`, {
+      headers: { 'Authorization': 'Bearer ' + state.token, 'Client-Id': CLIENT_ID }
+    });
+    if(!res.ok) throw new Error('リワード一覧の取得に失敗 (' + res.status + ')');
+    const data = await res.json();
+    state.rewards = data.data || [];
+    renderRewardSelect();
+    setStatus('', 'リワードを選択してください');
+  }catch(e){
+    setStatus('err', 'リワード一覧の取得に失敗しました');
+    log('エラー: ' + e.message);
+    els.rewardSelect.innerHTML = '<option value="">取得に失敗しました</option>';
+    expandSettings();
+  }
+}
+
+function renderRewardSelect(){
+  const savedRewardId = localStorage.getItem(LS_REWARD_ID) || '';
+  els.rewardSelect.innerHTML =
+    '<option value="">-- 選択してください --</option>' +
+    state.rewards.map(r =>
+      `<option value="${r.id}">${escapeHtml(r.title)}${r.is_user_input_required ? '' : '(テキスト入力なし)'}</option>`
+    ).join('');
+  els.rewardSelect.disabled = false;
+  if(savedRewardId && state.rewards.some(r => r.id === savedRewardId)){
+    els.rewardSelect.value = savedRewardId;
+    onRewardSelected();
+    collapseSettings(); // 前回設定を復元できたのでドックの表示領域を確保するため折りたたむ
+  }else{
+    expandSettings();
+  }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+els.rewardSelect.addEventListener('change', onRewardSelected);
+
+function onRewardSelected(){
+  const id = els.rewardSelect.value;
+  localStorage.setItem(LS_REWARD_ID, id);
+  if(!id){
+    if(state.ws) state.ws.close();
+    setStatus('', 'リワードを選択してください');
+    return;
+  }
+  connectEventSub();
+}
+
 // --- EventSub (WebSocket) ---
 function connectEventSub(url){
+  if(state.ws) state.ws.close();
   setStatus('pending', 'EventSubに接続中...');
   const ws = new WebSocket(url || 'wss://eventsub.wss.twitch.tv/ws');
   state.ws = ws;
@@ -299,6 +405,7 @@ function connectEventSub(url){
 }
 
 async function subscribeRedemption(sessionId){
+  const rewardId = els.rewardSelect.value;
   const res = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
     method: 'POST',
     headers: {
@@ -309,7 +416,7 @@ async function subscribeRedemption(sessionId){
     body: JSON.stringify({
       type: 'channel.channel_points_custom_reward_redemption.add',
       version: '1',
-      condition: { broadcaster_user_id: state.broadcasterId },
+      condition: { broadcaster_user_id: state.broadcasterId, reward_id: rewardId },
       transport: { method: 'websocket', session_id: sessionId },
     }),
   });
@@ -323,17 +430,14 @@ async function subscribeRedemption(sessionId){
 function handleNotification(payload){
   if(!payload.event) return;
   const ev = payload.event;
-  const targetTitle = els.rewardTitle.value.trim().toLowerCase();
-  const rewardTitle = (ev.reward && ev.reward.title || '').trim().toLowerCase();
-  if(targetTitle && rewardTitle !== targetTitle){
-    log(`対象外の交換をスキップ: "${ev.reward && ev.reward.title}"`);
-    return;
-  }
   addFeedItem(ev.user_name || ev.user_login || '(不明なユーザー)', ev.user_input || '(テキスト入力なし)');
 }
 
 function addFeedItem(userName, text){
   els.emptyMsg.style.display = 'none';
+  feedItems.unshift({ user: userName, text });
+  updateCopyAllState();
+
   const li = document.createElement('li');
   const time = new Date().toLocaleTimeString('ja-JP');
   li.innerHTML = `
@@ -359,6 +463,25 @@ function addFeedItem(userName, text){
   });
   els.feed.prepend(li);
 }
+
+function updateCopyAllState(){
+  els.copyAllBtn.disabled = feedItems.length === 0;
+}
+
+els.copyAllBtn.addEventListener('click', async () => {
+  const combined = feedItems.map(i => `${i.text}（${i.user}）`).join('\r\n');
+  try{
+    await navigator.clipboard.writeText(combined);
+    els.copyAllBtn.textContent = `コピーしました(${feedItems.length}件)`;
+    els.copyAllBtn.classList.add('copied');
+    setTimeout(() => {
+      els.copyAllBtn.textContent = 'すべてコピー';
+      els.copyAllBtn.classList.remove('copied');
+    }, 1500);
+  }catch(e){
+    els.copyAllBtn.textContent = 'コピー失敗';
+  }
+});
 
 handleRedirect();
 </script>
