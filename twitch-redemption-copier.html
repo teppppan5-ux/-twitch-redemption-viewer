@@ -76,15 +76,13 @@
   .btn-ghost{background:transparent; border-color:var(--border); color:var(--text);}
   .log{font-family:var(--mono); font-size:10px; color:var(--text-dim); line-height:1.6; white-space:pre-wrap; max-height:60px; overflow-y:auto;}
 
-  /* --- リワードのチェックボックス一覧 --- */
-  #rewardList{display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto;}
-  .reward-item{
-    display:flex; align-items:center; gap:8px; padding:6px 8px;
-    background:var(--panel-2); border:1px solid var(--border); border-radius:6px; font-size:12px;
-  }
-  .reward-item input{flex:none;}
-  .reward-item span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* --- リワードのプルダウン一覧 --- */
+  #rewardList{display:flex; flex-direction:column; gap:6px;}
   .reward-empty{font-size:11px; color:var(--text-dim); padding:6px 2px;}
+  .reward-error{
+    font-size:11px; color:var(--err); background:rgba(255,107,107,.12);
+    border:1px solid var(--err); border-radius:6px; padding:7px 9px; line-height:1.5;
+  }
 
   /* --- 交換一覧(スクロール領域) --- */
   .feedwrap{flex:1; overflow-y:auto; padding:8px 10px;}
@@ -202,6 +200,7 @@ let state = {
   ws: null,
   rewards: [],          // is_user_input_required=trueのみ
   selectedRewardIds: [],
+  hasMissingReward: false,
 };
 let feedItems = []; // {user, text} 新しい順
 
@@ -223,7 +222,9 @@ function setStatus(kind, text){
 function refreshSettingsButtonColor(kind){
   const btn = els.settingsToggleBtn;
   btn.classList.remove('attention', 'authed', 'warn');
-  if(!state.token || state.selectedRewardIds.length === 0){
+  if(state.hasMissingReward){
+    btn.classList.add('warn'); // 保存済みリワードが見つからない
+  }else if(!state.token || state.selectedRewardIds.length === 0){
     btn.classList.add('attention'); // ログイン or リワード選択が未完了
   }else if(kind === 'on'){
     btn.classList.add('authed'); // 正常に接続中
@@ -283,12 +284,12 @@ els.loginBtn.addEventListener('click', () => {
 
 els.logoutBtn.addEventListener('click', () => {
   if(state.ws) state.ws.close();
-  state = {token:null, broadcasterId:null, accountDisplayName:null, ws:null, rewards:[], selectedRewardIds:[]};
+  state = {token:null, broadcasterId:null, accountDisplayName:null, ws:null, rewards:[], selectedRewardIds:[], hasMissingReward:false};
   clearAccount();
   els.loginBtn.style.display = '';
   els.logoutBtn.style.display = 'none';
   els.whoAmI.textContent = '';
-  renderRewardList();
+  renderRewardPicker();
   updateSettingsButtonAuthState();
   setStatus('', '未接続');
   openPanel();
@@ -354,7 +355,7 @@ async function getMe(token){
   return data.data[0];
 }
 
-// ---- リワード一覧を取得(テキスト入力ありのみ)してチェックボックス表示 ----
+// ---- リワード一覧を取得(テキスト入力ありのみ)してプルダウンで表示 ----
 async function loadRewards(broadcasterId){
   setStatus('pending', 'リワード一覧を取得中...');
   els.rewardList.innerHTML = '<div class="reward-empty">読み込み中...</div>';
@@ -365,51 +366,84 @@ async function loadRewards(broadcasterId){
     if(!res.ok) throw new Error('リワード一覧の取得に失敗 (' + res.status + ')');
     const data = await res.json();
     state.rewards = (data.data || []).filter(r => r.is_user_input_required);
-    renderRewardList();
-    if(state.selectedRewardIds.length === 0){
-      openPanel();
-      setStatus('', 'リワードを選択してください');
-    }
+    renderRewardPicker();
   }catch(e){
     setStatus('err', 'リワード一覧の取得に失敗しました');
-    log('エラー: ' + e.message);
     els.rewardList.innerHTML = '<div class="reward-empty">取得に失敗しました</div>';
     openPanel();
   }
 }
 
-function renderRewardList(){
-  if(!state.token || state.rewards.length === 0){
-    els.rewardList.innerHTML = `<div class="reward-empty">${state.token ? 'テキスト入力ありのリワードが見つかりません' : '先にログインしてください'}</div>`;
+// 選択中のリワードをプルダウンで1つずつ表示し、選択するたびに次のプルダウンを追加する。
+// 前回保存されていたリワードがもう存在しない場合はエラー表示する。
+function renderRewardPicker(){
+  if(!state.token){
+    els.rewardList.innerHTML = '<div class="reward-empty">先にログインしてください</div>';
     return;
   }
+  if(state.rewards.length === 0){
+    els.rewardList.innerHTML = '<div class="reward-empty">テキスト入力ありのリワードが見つかりません</div>';
+    return;
+  }
+
   const saved = loadSelectedRewardIds();
+  const missing = saved.filter(id => !state.rewards.some(r => r.id === id));
   state.selectedRewardIds = saved.filter(id => state.rewards.some(r => r.id === id));
+  state.hasMissingReward = missing.length > 0;
 
-  els.rewardList.innerHTML = state.rewards.map(r => `
-    <label class="reward-item">
-      <input type="checkbox" value="${r.id}" ${state.selectedRewardIds.includes(r.id) ? 'checked' : ''}>
-      <span>${escapeHtml(r.title)}</span>
-    </label>
-  `).join('');
+  let html = '';
+  if(missing.length > 0){
+    html += `<div class="reward-error">前回選択していたリワードが見つかりません(削除された可能性があります): ${missing.length}件</div>`;
+  }
 
-  els.rewardList.querySelectorAll('input[type=checkbox]').forEach(cb => {
-    cb.addEventListener('change', onRewardSelectionChanged);
+  const remaining = state.rewards.filter(r => !state.selectedRewardIds.includes(r.id));
+
+  state.selectedRewardIds.forEach((id, idx) => {
+    const current = state.rewards.find(r => r.id === id);
+    const options = [current, ...remaining];
+    html += buildRewardSelect(idx, id, options);
+  });
+  if(remaining.length > 0){
+    html += buildRewardSelect(state.selectedRewardIds.length, '', remaining);
+  }
+  els.rewardList.innerHTML = html;
+
+  els.rewardList.querySelectorAll('select[data-idx]').forEach(sel => {
+    sel.addEventListener('change', onRewardSelectChange);
   });
 
-  if(state.selectedRewardIds.length > 0) connectEventSub();
-}
+  if(missing.length > 0) openPanel();
 
-function onRewardSelectionChanged(){
-  const ids = Array.from(els.rewardList.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
-  state.selectedRewardIds = ids;
-  saveSelectedRewardIds(ids);
-  if(ids.length === 0){
+  if(state.selectedRewardIds.length === 0){
     if(state.ws) state.ws.close();
     setStatus('', 'リワードを選択してください');
-    return;
+    if(!missing.length) openPanel();
+  }else{
+    connectEventSub();
   }
-  connectEventSub();
+  refreshSettingsButtonColor(lastStatusKind); // hasMissingReward の反映
+}
+
+function buildRewardSelect(idx, currentId, options){
+  const opts = options.map(r =>
+    `<option value="${r.id}" ${r.id === currentId ? 'selected' : ''}>${escapeHtml(r.title)}</option>`
+  ).join('');
+  const placeholder = currentId ? '' : '<option value="" selected>＋ リワードを追加</option>';
+  return `<select data-idx="${idx}">${placeholder}${opts}</select>`;
+}
+
+function onRewardSelectChange(e){
+  const idx = Number(e.target.dataset.idx);
+  const val = e.target.value;
+  if(val === ''){
+    state.selectedRewardIds.splice(idx, 1);
+  }else if(idx < state.selectedRewardIds.length){
+    state.selectedRewardIds[idx] = val;
+  }else{
+    state.selectedRewardIds.push(val);
+  }
+  saveSelectedRewardIds(state.selectedRewardIds);
+  renderRewardPicker();
 }
 
 function escapeHtml(s){
@@ -430,7 +464,6 @@ function connectEventSub(url){
 
     if(type === 'session_welcome'){
       const sessionId = msg.payload.session.id;
-      log('WebSocketセッション確立: ' + sessionId);
       try{
         for(const rewardId of state.selectedRewardIds){
           await subscribeRedemption(sessionId, rewardId);
@@ -483,7 +516,6 @@ async function subscribeRedemption(sessionId, rewardId){
     const body = await res.text();
     throw new Error('購読作成失敗 (' + res.status + '): ' + body);
   }
-  log('購読作成: ' + (state.rewards.find(r => r.id === rewardId)?.title || rewardId));
 }
 
 function handleNotification(payload){
