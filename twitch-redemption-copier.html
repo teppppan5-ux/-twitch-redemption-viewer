@@ -146,6 +146,9 @@
 
     <div class="section">
       <div class="section-title">対象のリワード(複数選択可)</div>
+      <div class="row">
+        <button class="btn-ghost" id="refreshRewardsBtn">リワード情報を更新</button>
+      </div>
       <div id="rewardList">
         <div class="reward-empty">先にログインしてください</div>
       </div>
@@ -185,6 +188,7 @@ const els = {
   logoutBtn: document.getElementById('logoutBtn'),
   whoAmI: document.getElementById('whoAmI'),
   rewardList: document.getElementById('rewardList'),
+  refreshRewardsBtn: document.getElementById('refreshRewardsBtn'),
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
   logArea: document.getElementById('logArea'),
@@ -354,6 +358,19 @@ async function getMe(token){
   if(!data.data || !data.data[0]) throw new Error('ユーザー情報が空です');
   return data.data[0];
 }
+
+// ---- リワード情報を手動で更新 ----
+els.refreshRewardsBtn.addEventListener('click', async () => {
+  if(!state.token){
+    alert('先にログインしてください');
+    return;
+  }
+  els.refreshRewardsBtn.disabled = true;
+  els.refreshRewardsBtn.textContent = '更新中...';
+  await loadRewards(state.broadcasterId);
+  els.refreshRewardsBtn.disabled = false;
+  els.refreshRewardsBtn.textContent = 'リワード情報を更新';
+});
 
 // ---- リワード一覧を取得(テキスト入力ありのみ)してプルダウンで表示 ----
 async function loadRewards(broadcasterId){
