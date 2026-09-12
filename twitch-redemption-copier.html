@@ -33,34 +33,35 @@
     flex:none; display:flex; align-items:center; gap:8px;
     padding:8px 10px; border-bottom:1px solid var(--border); background:var(--panel);
   }
-  .topbar .status{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--text-dim);}
+  .topbar .status{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--text-dim); flex:none;}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--text-dim); flex:none;}
   .dot.on{background:var(--ok); box-shadow:0 0 0 3px rgba(78,230,163,.15);}
   .dot.err{background:var(--err);}
   .dot.pending{background:var(--warn);}
   .topbar .spacer{flex:1;}
-  .iconbtn{
-    flex:none; width:26px; height:26px; padding:0; border-radius:6px;
-    background:transparent; border:1px solid transparent; color:var(--text-dim);
-    font-size:14px; display:flex; align-items:center; justify-content:center;
-  }
-  .iconbtn:hover{background:var(--panel-2); color:var(--text); border-color:var(--border);}
+  .btn-settings{font-size:11px; padding:6px 12px; white-space:nowrap;}
+  .btn-settings.authed{border-color:var(--ok); color:var(--ok); background:transparent;}
+  .btn-settings.attention{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn-settings.warn{border-color:var(--err); color:var(--err); background:transparent;}
 
-  /* --- 設定パネル(折りたたみ可能) --- */
+  /* --- 設定パネル --- */
   #settingsPanel{
     flex:none; background:var(--panel); border-bottom:1px solid var(--border);
-    padding:10px; display:flex; flex-direction:column; gap:10px;
+    padding:10px; display:flex; flex-direction:column; gap:12px;
+    max-height:60vh; overflow-y:auto;
   }
   #settingsPanel.collapsed{display:none;}
-  .field label{display:block; font-size:10.5px; color:var(--text-dim); margin-bottom:4px; letter-spacing:.02em;}
+  .section{display:flex; flex-direction:column; gap:8px;}
+  .section-title{font-size:10.5px; color:var(--text-dim); letter-spacing:.03em; text-transform:uppercase;}
+  .divider{border-top:1px solid var(--border); margin:0;}
+
   select, input[type=text]{
     width:100%; background:var(--panel-2); border:1px solid var(--border);
     color:var(--text); padding:6px 8px; border-radius:6px; font-size:12px;
     font-family:var(--mono);
   }
   select:focus, input[type=text]:focus{outline:none; border-color:var(--accent);}
-  select:disabled{opacity:.5;}
-  .hint{font-size:10.5px; color:var(--text-dim); margin-top:4px; line-height:1.5;}
+  .hint{font-size:10.5px; color:var(--text-dim); line-height:1.5;}
   .who{font-size:11px; color:var(--text-dim); font-family:var(--mono);}
   .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
 
@@ -73,16 +74,17 @@
   button:disabled{opacity:.4; cursor:not-allowed;}
   .btn-primary{background:var(--accent); color:#fff;}
   .btn-ghost{background:transparent; border-color:var(--border); color:var(--text);}
-  .log{font-family:var(--mono); font-size:10px; color:var(--text-dim); line-height:1.6; white-space:pre-wrap; max-height:70px; overflow-y:auto;}
+  .log{font-family:var(--mono); font-size:10px; color:var(--text-dim); line-height:1.6; white-space:pre-wrap; max-height:60px; overflow-y:auto;}
 
-  /* --- コピー全体ボタン --- */
-  .toolbar{flex:none; padding:8px 10px; border-bottom:1px solid var(--border); background:var(--bg);}
-  .btn-copyall{
-    width:100%; background:var(--accent-dim); border:1px solid var(--accent); color:#fff;
-    padding:8px; font-size:11.5px;
+  /* --- リワードのチェックボックス一覧 --- */
+  #rewardList{display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto;}
+  .reward-item{
+    display:flex; align-items:center; gap:8px; padding:6px 8px;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:6px; font-size:12px;
   }
-  .btn-copyall.copied{background:var(--ok); border-color:var(--ok); color:#111;}
-  .btn-copyall:disabled{opacity:.35;}
+  .reward-item input{flex:none;}
+  .reward-item span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .reward-empty{font-size:11px; color:var(--text-dim); padding:6px 2px;}
 
   /* --- 交換一覧(スクロール領域) --- */
   .feedwrap{flex:1; overflow-y:auto; padding:8px 10px;}
@@ -93,6 +95,7 @@
   }
   .feed .meta{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; gap:8px;}
   .feed .user{font-weight:600; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .feed .reward{font-size:10px; color:var(--accent); font-family:var(--mono);}
   .feed .time{font-size:10px; color:var(--text-dim); font-family:var(--mono); flex:none;}
   .feed .text{
     font-family:var(--mono); font-size:12px; line-height:1.5; color:var(--text);
@@ -104,6 +107,15 @@
   }
   .btn-copy.copied{background:var(--ok); border-color:var(--ok); color:#111;}
   .empty{color:var(--text-dim); font-size:11.5px; text-align:center; padding:24px 0; font-family:var(--mono);}
+
+  /* --- 下部固定のコピー全体バー --- */
+  .copybar{flex:none; padding:8px 10px; border-top:1px solid var(--border); background:var(--panel);}
+  .btn-copyall{
+    width:100%; background:var(--accent-dim); border:1px solid var(--accent); color:#fff;
+    padding:9px; font-size:11.5px;
+  }
+  .btn-copyall.copied{background:var(--ok); border-color:var(--ok); color:#111;}
+  .btn-copyall:disabled{opacity:.35;}
 
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
@@ -117,38 +129,42 @@
       <span class="dot" id="statusDot"></span>
       <span id="statusText">未接続</span>
     </span>
+    <button class="btn-settings btn-ghost" id="settingsToggleBtn">設定</button>
     <span class="spacer"></span>
-    <button class="iconbtn" id="gearBtn" title="設定">⚙</button>
   </div>
 
-  <div id="settingsPanel">
-    <div class="field">
-      <label>アカウント</label>
+  <div id="settingsPanel" class="collapsed">
+    <div class="section">
+      <div class="section-title">アカウント</div>
       <div class="row">
         <button class="btn-primary" id="loginBtn">Twitchでログイン</button>
         <button class="btn-ghost" id="logoutBtn" style="display:none;">ログアウト</button>
       </div>
-      <div class="who" id="whoAmI" style="margin-top:6px;"></div>
+      <div class="who" id="whoAmI"></div>
+      <div class="log" id="logArea"></div>
     </div>
 
-    <div class="field">
-      <label>対象のリワード</label>
-      <select id="rewardSelect" disabled>
-        <option value="">-- 先にログインしてください --</option>
-      </select>
-      <div class="hint">「(テキスト入力なし)」はテキスト入力が設定されていないリワードです。</div>
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-title">対象のリワード(複数選択可)</div>
+      <div id="rewardList">
+        <div class="reward-empty">先にログインしてください</div>
+      </div>
+      <div class="hint">テキスト入力が設定されているリワードのみ表示しています。</div>
     </div>
 
-    <div class="log" id="logArea"></div>
-  </div>
-
-  <div class="toolbar">
-    <button class="btn-copyall" id="copyAllBtn" disabled>すべてコピー</button>
+    <div class="divider"></div>
+    <button class="btn-ghost" id="closeSettingsBtn">閉じる</button>
   </div>
 
   <div class="feedwrap">
     <ul class="feed" id="feed"></ul>
     <div class="empty" id="emptyMsg">まだ交換はありません</div>
+  </div>
+
+  <div class="copybar">
+    <button class="btn-copyall" id="copyAllBtn" disabled>すべてコピー</button>
   </div>
 
 <script>
@@ -160,29 +176,32 @@ const CLIENT_ID = '1wfdr29bx3owx5fheul1om2a5c0oka';
 // ============================================
 
 const REDIRECT_URI = location.origin + location.pathname;
-const LS_ACCOUNT = 'twpc_account';       // { id, login, display_name, token }
-const LS_REWARD_ID = 'twpc_reward_id';   // 選択中のリワードID
+const LS_ACCOUNT = 'twpc_account';        // { id, login, display_name, token }
+const LS_REWARD_IDS = 'twpc_reward_ids';  // JSON配列
 
 const els = {
+  settingsToggleBtn: document.getElementById('settingsToggleBtn'),
+  settingsPanel: document.getElementById('settingsPanel'),
+  closeSettingsBtn: document.getElementById('closeSettingsBtn'),
   loginBtn: document.getElementById('loginBtn'),
   logoutBtn: document.getElementById('logoutBtn'),
   whoAmI: document.getElementById('whoAmI'),
-  rewardSelect: document.getElementById('rewardSelect'),
+  rewardList: document.getElementById('rewardList'),
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
   logArea: document.getElementById('logArea'),
   feed: document.getElementById('feed'),
   emptyMsg: document.getElementById('emptyMsg'),
   copyAllBtn: document.getElementById('copyAllBtn'),
-  gearBtn: document.getElementById('gearBtn'),
-  settingsPanel: document.getElementById('settingsPanel'),
 };
 
 let state = {
   token: null,
   broadcasterId: null,
+  accountDisplayName: null,
   ws: null,
-  rewards: [],
+  rewards: [],          // is_user_input_required=trueのみ
+  selectedRewardIds: [],
 };
 let feedItems = []; // {user, text} 新しい順
 
@@ -192,29 +211,60 @@ function log(msg){
   els.logArea.scrollTop = els.logArea.scrollHeight;
 }
 
+let lastStatusKind = '';
 function setStatus(kind, text){
+  lastStatusKind = kind;
   els.statusDot.className = 'dot' + (kind ? ' ' + kind : '');
   els.statusText.textContent = text;
+  refreshSettingsButtonColor(kind);
 }
 
-// ---- 設定パネルの開閉 ----
-els.gearBtn.addEventListener('click', () => {
-  els.settingsPanel.classList.toggle('collapsed');
-});
-function collapseSettings(){ els.settingsPanel.classList.add('collapsed'); }
-function expandSettings(){ els.settingsPanel.classList.remove('collapsed'); }
+// 設定ボタンの色で「未設定/接続中/切断・エラー/正常」がひと目でわかるようにする
+function refreshSettingsButtonColor(kind){
+  const btn = els.settingsToggleBtn;
+  btn.classList.remove('attention', 'authed', 'warn');
+  if(!state.token || state.selectedRewardIds.length === 0){
+    btn.classList.add('attention'); // ログイン or リワード選択が未完了
+  }else if(kind === 'on'){
+    btn.classList.add('authed'); // 正常に接続中
+  }else if(kind === 'err'){
+    btn.classList.add('warn'); // 切断・エラー
+  }
+  // pending等はニュートラル(通常のボタン見た目)のまま
+}
 
-// ---- localStorage ヘルパー(アカウントは1つだけ保持) ----
+// ---- 設定ボタン/パネルの開閉(開いている間は「閉じる」ボタンになる) ----
+function isPanelOpen(){ return !els.settingsPanel.classList.contains('collapsed'); }
+function openPanel(){
+  els.settingsPanel.classList.remove('collapsed');
+  els.settingsToggleBtn.textContent = '閉じる';
+}
+function closePanel(){
+  els.settingsPanel.classList.add('collapsed');
+  els.settingsToggleBtn.textContent = '設定';
+}
+els.settingsToggleBtn.addEventListener('click', () => {
+  isPanelOpen() ? closePanel() : openPanel();
+});
+els.closeSettingsBtn.addEventListener('click', closePanel);
+
+function updateSettingsButtonAuthState(){
+  refreshSettingsButtonColor(lastStatusKind);
+}
+
+// ---- localStorage ヘルパー ----
 function loadAccount(){
   try{ return JSON.parse(localStorage.getItem(LS_ACCOUNT) || 'null'); }catch(e){ return null; }
 }
-function saveAccount(account){
-  localStorage.setItem(LS_ACCOUNT, JSON.stringify(account));
-}
+function saveAccount(account){ localStorage.setItem(LS_ACCOUNT, JSON.stringify(account)); }
 function clearAccount(){
   localStorage.removeItem(LS_ACCOUNT);
-  localStorage.removeItem(LS_REWARD_ID);
+  localStorage.removeItem(LS_REWARD_IDS);
 }
+function loadSelectedRewardIds(){
+  try{ return JSON.parse(localStorage.getItem(LS_REWARD_IDS) || '[]'); }catch(e){ return []; }
+}
+function saveSelectedRewardIds(ids){ localStorage.setItem(LS_REWARD_IDS, JSON.stringify(ids)); }
 
 // ---- ログイン(Implicit Grant Flow。Client IDは埋め込み済みなので入力不要) ----
 els.loginBtn.addEventListener('click', () => {
@@ -233,15 +283,15 @@ els.loginBtn.addEventListener('click', () => {
 
 els.logoutBtn.addEventListener('click', () => {
   if(state.ws) state.ws.close();
-  state = {token:null, broadcasterId:null, ws:null, rewards:[]};
+  state = {token:null, broadcasterId:null, accountDisplayName:null, ws:null, rewards:[], selectedRewardIds:[]};
   clearAccount();
   els.loginBtn.style.display = '';
   els.logoutBtn.style.display = 'none';
   els.whoAmI.textContent = '';
-  els.rewardSelect.disabled = true;
-  els.rewardSelect.innerHTML = '<option value="">-- 先にログインしてください --</option>';
+  renderRewardList();
+  updateSettingsButtonAuthState();
   setStatus('', '未接続');
-  expandSettings();
+  openPanel();
 });
 
 // ---- リダイレクト後、hashからトークンを取り出す。なければ保存済みアカウントで自動ログイン ----
@@ -253,7 +303,7 @@ async function handleRedirect(){
   if(!token){
     const saved = loadAccount();
     if(saved){ await loginWithAccount(saved); }
-    else{ expandSettings(); }
+    else{ openPanel(); }
     return;
   }
 
@@ -268,7 +318,7 @@ async function handleRedirect(){
   }catch(e){
     setStatus('err', 'ログインに失敗しました');
     log('エラー: ' + e.message);
-    expandSettings();
+    openPanel();
   }
 }
 
@@ -280,14 +330,16 @@ async function loginWithAccount(account){
     log(`保存済みトークンが無効です(再ログインが必要): ${e.message}`);
     setStatus('err', '再ログインが必要です');
     clearAccount();
-    expandSettings();
+    openPanel();
     return;
   }
   state.token = account.token;
   state.broadcasterId = account.id;
+  state.accountDisplayName = account.display_name;
   els.loginBtn.style.display = 'none';
   els.logoutBtn.style.display = '';
   els.whoAmI.textContent = account.display_name + ' としてログイン中';
+  updateSettingsButtonAuthState();
 
   await loadRewards(account.id);
 }
@@ -302,60 +354,66 @@ async function getMe(token){
   return data.data[0];
 }
 
-// ---- リワード一覧を取得してプルダウンに表示 ----
+// ---- リワード一覧を取得(テキスト入力ありのみ)してチェックボックス表示 ----
 async function loadRewards(broadcasterId){
   setStatus('pending', 'リワード一覧を取得中...');
-  els.rewardSelect.disabled = true;
-  els.rewardSelect.innerHTML = '<option value="">読み込み中...</option>';
+  els.rewardList.innerHTML = '<div class="reward-empty">読み込み中...</div>';
   try{
     const res = await fetch(`https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=${broadcasterId}`, {
       headers: { 'Authorization': 'Bearer ' + state.token, 'Client-Id': CLIENT_ID }
     });
     if(!res.ok) throw new Error('リワード一覧の取得に失敗 (' + res.status + ')');
     const data = await res.json();
-    state.rewards = data.data || [];
-    renderRewardSelect();
-    setStatus('', 'リワードを選択してください');
+    state.rewards = (data.data || []).filter(r => r.is_user_input_required);
+    renderRewardList();
+    if(state.selectedRewardIds.length === 0){
+      openPanel();
+      setStatus('', 'リワードを選択してください');
+    }
   }catch(e){
     setStatus('err', 'リワード一覧の取得に失敗しました');
     log('エラー: ' + e.message);
-    els.rewardSelect.innerHTML = '<option value="">取得に失敗しました</option>';
-    expandSettings();
+    els.rewardList.innerHTML = '<div class="reward-empty">取得に失敗しました</div>';
+    openPanel();
   }
 }
 
-function renderRewardSelect(){
-  const savedRewardId = localStorage.getItem(LS_REWARD_ID) || '';
-  els.rewardSelect.innerHTML =
-    '<option value="">-- 選択してください --</option>' +
-    state.rewards.map(r =>
-      `<option value="${r.id}">${escapeHtml(r.title)}${r.is_user_input_required ? '' : '(テキスト入力なし)'}</option>`
-    ).join('');
-  els.rewardSelect.disabled = false;
-  if(savedRewardId && state.rewards.some(r => r.id === savedRewardId)){
-    els.rewardSelect.value = savedRewardId;
-    onRewardSelected();
-    collapseSettings(); // 前回設定を復元できたのでドックの表示領域を確保するため折りたたむ
-  }else{
-    expandSettings();
+function renderRewardList(){
+  if(!state.token || state.rewards.length === 0){
+    els.rewardList.innerHTML = `<div class="reward-empty">${state.token ? 'テキスト入力ありのリワードが見つかりません' : '先にログインしてください'}</div>`;
+    return;
   }
+  const saved = loadSelectedRewardIds();
+  state.selectedRewardIds = saved.filter(id => state.rewards.some(r => r.id === id));
+
+  els.rewardList.innerHTML = state.rewards.map(r => `
+    <label class="reward-item">
+      <input type="checkbox" value="${r.id}" ${state.selectedRewardIds.includes(r.id) ? 'checked' : ''}>
+      <span>${escapeHtml(r.title)}</span>
+    </label>
+  `).join('');
+
+  els.rewardList.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', onRewardSelectionChanged);
+  });
+
+  if(state.selectedRewardIds.length > 0) connectEventSub();
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-els.rewardSelect.addEventListener('change', onRewardSelected);
-
-function onRewardSelected(){
-  const id = els.rewardSelect.value;
-  localStorage.setItem(LS_REWARD_ID, id);
-  if(!id){
+function onRewardSelectionChanged(){
+  const ids = Array.from(els.rewardList.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+  state.selectedRewardIds = ids;
+  saveSelectedRewardIds(ids);
+  if(ids.length === 0){
     if(state.ws) state.ws.close();
     setStatus('', 'リワードを選択してください');
     return;
   }
   connectEventSub();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 // --- EventSub (WebSocket) ---
@@ -374,8 +432,10 @@ function connectEventSub(url){
       const sessionId = msg.payload.session.id;
       log('WebSocketセッション確立: ' + sessionId);
       try{
-        await subscribeRedemption(sessionId);
-        setStatus('on', '接続中・待機中');
+        for(const rewardId of state.selectedRewardIds){
+          await subscribeRedemption(sessionId, rewardId);
+        }
+        setStatus('on', `接続中・待機中(${state.selectedRewardIds.length}件のリワード)`);
       }catch(e){
         setStatus('err', '購読の作成に失敗しました');
         log('エラー: ' + e.message);
@@ -404,8 +464,7 @@ function connectEventSub(url){
   ws.onerror = () => log('WebSocketエラーが発生しました');
 }
 
-async function subscribeRedemption(sessionId){
-  const rewardId = els.rewardSelect.value;
+async function subscribeRedemption(sessionId, rewardId){
   const res = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
     method: 'POST',
     headers: {
@@ -424,16 +483,20 @@ async function subscribeRedemption(sessionId){
     const body = await res.text();
     throw new Error('購読作成失敗 (' + res.status + '): ' + body);
   }
-  log('チャンネルポイント交換イベントの購読を作成しました');
+  log('購読作成: ' + (state.rewards.find(r => r.id === rewardId)?.title || rewardId));
 }
 
 function handleNotification(payload){
   if(!payload.event) return;
   const ev = payload.event;
-  addFeedItem(ev.user_name || ev.user_login || '(不明なユーザー)', ev.user_input || '(テキスト入力なし)');
+  addFeedItem(
+    ev.user_name || ev.user_login || '(不明なユーザー)',
+    ev.user_input || '(テキスト入力なし)',
+    ev.reward && ev.reward.title || ''
+  );
 }
 
-function addFeedItem(userName, text){
+function addFeedItem(userName, text, rewardTitle){
   els.emptyMsg.style.display = 'none';
   feedItems.unshift({ user: userName, text });
   updateCopyAllState();
@@ -445,10 +508,13 @@ function addFeedItem(userName, text){
       <span class="user"></span>
       <span class="time">${time}</span>
     </div>
+    ${rewardTitle && state.selectedRewardIds.length > 1 ? `<div class="reward"></div>` : ''}
     <div class="text"></div>
     <button class="btn-copy">コピー</button>
   `;
   li.querySelector('.user').textContent = userName;
+  const rewardEl = li.querySelector('.reward');
+  if(rewardEl) rewardEl.textContent = rewardTitle;
   li.querySelector('.text').textContent = text;
   const btn = li.querySelector('.btn-copy');
   btn.addEventListener('click', async () => {
@@ -483,6 +549,7 @@ els.copyAllBtn.addEventListener('click', async () => {
   }
 });
 
+setStatus('', '未接続');
 handleRedirect();
 </script>
 </body>
