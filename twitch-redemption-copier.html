@@ -81,7 +81,7 @@
   .reward-row{display:flex; gap:6px; align-items:center;}
   .reward-row select{flex:1;}
   .reward-row.new-slot select{border-color:var(--err); box-shadow:0 0 0 1px var(--err);}
-  .btn-trash{color:var(--text-dim);}
+  .btn-trash{color:var(--text-dim); font-size:18px; font-weight:400; line-height:1;}
   .btn-trash:hover{color:var(--err); border-color:var(--err);}
   .btn-add{width:100%; margin-top:2px;}
   .reward-empty{font-size:11px; color:var(--text-dim); padding:6px 2px;}
@@ -470,7 +470,7 @@ function buildRewardRow(idx, currentId, options, isNewSlot){
   return `
     <div class="reward-row${isNewSlot ? ' new-slot' : ''}">
       <select data-idx="${idx}">${placeholder}${opts}</select>
-      <button class="iconbtn btn-trash" data-idx="${idx}" title="削除" type="button">🗑</button>
+      <button class="iconbtn btn-trash" data-idx="${idx}" title="削除" type="button">×</button>
     </div>
   `;
 }
