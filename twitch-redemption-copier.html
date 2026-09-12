@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チャンネルポイント交換ビューア</title>
+<style>
+  :root{
+    --bg:#0d0c14;
+    --panel:#161420;
+    --panel-2:#1d1a29;
+    --border:#2c2838;
+    --text:#eeecf5;
+    --text-dim:#8d87a0;
+    --accent:#7c5cff;
+    --accent-dim:#4c3d99;
+    --ok:#4ee6a3;
+    --warn:#f2b84b;
+    --err:#ff6b6b;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+    --sans: -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family:var(--sans); padding:32px 20px 60px;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+  header{margin-bottom:28px;}
+  header h1{font-size:20px; font-weight:600; margin:0 0 6px;}
+  header p{color:var(--text-dim); font-size:13.5px; margin:0; line-height:1.6;}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:20px; margin-bottom:16px;
+  }
+  .step{display:flex; gap:14px;}
+  .step-num{
+    flex:none; width:24px; height:24px; border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:var(--text-dim); font-family:var(--mono);
+  }
+  .step.done .step-num{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .step-body{flex:1; min-width:0;}
+  .step-body label{display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px;}
+  .step-body .hint{font-size:12px; color:var(--text-dim); margin-top:6px; line-height:1.6;}
+
+  input[type=text]{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:9px 11px; border-radius:7px; font-size:13.5px;
+    font-family:var(--mono);
+  }
+  input[type=text]:focus{outline:none; border-color:var(--accent);}
+
+  button{
+    font-family:var(--sans); font-size:13.5px; font-weight:600; cursor:pointer;
+    border-radius:7px; border:1px solid transparent; padding:9px 16px;
+    transition:opacity .15s;
+  }
+  button:hover{opacity:.88;}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-primary{background:var(--accent); color:#fff;}
+  .btn-ghost{background:transparent; border-color:var(--border); color:var(--text);}
+  .btn-copy{background:var(--panel-2); border-color:var(--border); color:var(--accent); font-family:var(--mono); font-size:12.5px; padding:6px 12px;}
+  .btn-copy.copied{background:var(--ok); border-color:var(--ok); color:#0d0c14;}
+
+  .row{display:flex; gap:10px; align-items:center; margin-top:10px;}
+
+  .status{
+    display:flex; align-items:center; gap:8px; font-size:13px; font-family:var(--mono);
+  }
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--text-dim);}
+  .dot.on{background:var(--ok); box-shadow:0 0 0 3px rgba(78,230,163,.15);}
+  .dot.err{background:var(--err);}
+  .dot.pending{background:var(--warn);}
+
+  .feed{list-style:none; margin:0; padding:0;}
+  .feed li{
+    border:1px solid var(--border); border-radius:9px; padding:14px 16px;
+    margin-bottom:10px; background:var(--panel-2);
+  }
+  .feed .meta{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .feed .user{font-weight:600; font-size:14px;}
+  .feed .time{font-size:11px; color:var(--text-dim); font-family:var(--mono);}
+  .feed .text{
+    font-family:var(--mono); font-size:13.5px; line-height:1.6; color:var(--text);
+    white-space:pre-wrap; word-break:break-word; margin-bottom:10px;
+  }
+  .empty{color:var(--text-dim); font-size:13px; text-align:center; padding:30px 0; font-family:var(--mono);}
+  .log{font-family:var(--mono); font-size:11.5px; color:var(--text-dim); margin-top:8px; line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>チャンネルポイント交換ビューア</h1>
+    <p>指定したリワードが交換されたら、ユーザー名と入力テキストを一覧表示。ボタンでクリップボードにコピーできます。</p>
+  </header>
+
+  <div class="panel">
+    <div class="step" id="step2">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <label>対象のリワード名(チャンネルポイントの交換タイトル)</label>
+        <input type="text" id="rewardTitle" placeholder="例: コメントを読んでもらう">
+        <div class="hint">このタイトルと完全一致(前後の空白は無視・大文字小文字は区別しません)した交換だけを表示します。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="step" id="step3">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <label>Twitchでログイン</label>
+        <div class="row">
+          <button class="btn-primary" id="loginBtn">Twitchでログイン</button>
+          <button class="btn-ghost" id="logoutBtn" style="display:none;">ログアウト</button>
+        </div>
+        <div class="status" style="margin-top:12px;">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">未接続</span>
+        </div>
+        <div class="log" id="logArea"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <label style="display:block; font-size:13px; color:var(--text-dim); margin-bottom:12px;">受信した交換</label>
+    <ul class="feed" id="feed"></ul>
+    <div class="empty" id="emptyMsg">まだ交換はありません</div>
+  </div>
+</div>
+
+<script>
+// ==== 運営者が最初に1回だけ設定する項目 ====
+// dev.twitch.tv/console で発行したClient IDをここに埋め込む。
+// このファイルを配置する固定URL(下記REDIRECT_URIに表示される値)を
+// Twitchアプリの「OAuth Redirect URLs」に登録しておくこと。
+const CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+// ============================================
+
+const REDIRECT_URI = location.origin + location.pathname;
+
+const els = {
+  rewardTitle: document.getElementById('rewardTitle'),
+  loginBtn: document.getElementById('loginBtn'),
+  logoutBtn: document.getElementById('logoutBtn'),
+  statusDot: document.getElementById('statusDot'),
+  statusText: document.getElementById('statusText'),
+  logArea: document.getElementById('logArea'),
+  feed: document.getElementById('feed'),
+  emptyMsg: document.getElementById('emptyMsg'),
+  step2: document.getElementById('step2'),
+  step3: document.getElementById('step3'),
+};
+
+let state = {
+  token: null,
+  broadcasterId: null,
+  ws: null,
+};
+
+function log(msg){
+  const t = new Date().toLocaleTimeString('ja-JP');
+  els.logArea.textContent += `[${t}] ${msg}\n`;
+  els.logArea.scrollTop = els.logArea.scrollHeight;
+}
+
+function setStatus(kind, text){
+  els.statusDot.className = 'dot' + (kind ? ' ' + kind : '');
+  els.statusText.textContent = text;
+}
+
+els.rewardTitle.addEventListener('input', () => {
+  els.step2.classList.toggle('done', !!els.rewardTitle.value.trim());
+});
+
+// --- ログイン(Implicit Grant Flow。Client IDは埋め込み済みなので入力不要) ---
+els.loginBtn.addEventListener('click', () => {
+  if(CLIENT_ID === 'YOUR_CLIENT_ID_HERE'){
+    alert('コード内のCLIENT_IDが未設定です。運営者に連絡してください。');
+    return;
+  }
+  if(!els.rewardTitle.value.trim()){ alert('先に対象のリワード名を入力してください'); return; }
+  saveRewardTitleAcrossRedirect(els.rewardTitle.value.trim());
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'token',
+    scope: 'channel:read:redemptions',
+  });
+  location.href = 'https://id.twitch.tv/oauth2/authorize?' + params.toString();
+});
+
+// リワード名だけ、リダイレクトをまたいで引き継ぐ(localStorage/sessionStorageは使わず、
+// タブ内で完結するwindow.nameに一時保存する)
+function saveRewardTitleAcrossRedirect(rewardTitle){
+  window.name = JSON.stringify({rewardTitle});
+}
+function loadRewardTitleAcrossRedirect(){
+  try{ return JSON.parse(window.name || '{}'); }catch(e){ return {}; }
+}
+
+els.logoutBtn.addEventListener('click', () => {
+  if(state.ws) state.ws.close();
+  state = {token:null, broadcasterId:null, ws:null};
+  els.loginBtn.style.display = '';
+  els.logoutBtn.style.display = 'none';
+  els.step3.classList.remove('done');
+  setStatus('', '未接続');
+});
+
+// --- リダイレクト後、hashからトークンを取り出す ---
+async function handleRedirect(){
+  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : '';
+  const hashParams = new URLSearchParams(hash);
+  const token = hashParams.get('access_token');
+  if(!token) return;
+
+  history.replaceState(null, '', REDIRECT_URI); // URLからトークンを消す
+
+  const saved = loadRewardTitleAcrossRedirect();
+  if(saved.rewardTitle) els.rewardTitle.value = saved.rewardTitle;
+  els.step2.classList.toggle('done', !!els.rewardTitle.value.trim());
+
+  state.token = token;
+
+  setStatus('pending', 'ユーザー情報を取得中...');
+  try{
+    const user = await getMe(token);
+    state.broadcasterId = user.id;
+    log(`ログイン成功: ${user.display_name} (id:${user.id})`);
+    els.loginBtn.style.display = 'none';
+    els.logoutBtn.style.display = '';
+    els.step3.classList.add('done');
+    connectEventSub();
+  }catch(e){
+    setStatus('err', 'ログインに失敗しました');
+    log('エラー: ' + e.message);
+  }
+}
+
+async function getMe(token){
+  const res = await fetch('https://api.twitch.tv/helix/users', {
+    headers: { 'Authorization': 'Bearer ' + token, 'Client-Id': CLIENT_ID }
+  });
+  if(!res.ok) throw new Error('ユーザー情報の取得に失敗 (' + res.status + ')');
+  const data = await res.json();
+  if(!data.data || !data.data[0]) throw new Error('ユーザー情報が空です');
+  return data.data[0];
+}
+
+// --- EventSub (WebSocket) ---
+function connectEventSub(url){
+  setStatus('pending', 'EventSubに接続中...');
+  const ws = new WebSocket(url || 'wss://eventsub.wss.twitch.tv/ws');
+  state.ws = ws;
+
+  ws.onmessage = async (ev) => {
+    let msg;
+    try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+    const type = msg.metadata && msg.metadata.message_type;
+
+    if(type === 'session_welcome'){
+      const sessionId = msg.payload.session.id;
+      log('WebSocketセッション確立: ' + sessionId);
+      try{
+        await subscribeRedemption(sessionId);
+        setStatus('on', '接続中・待機中');
+      }catch(e){
+        setStatus('err', '購読の作成に失敗しました');
+        log('エラー: ' + e.message);
+      }
+    } else if(type === 'session_reconnect'){
+      const newUrl = msg.payload.session.reconnect_url;
+      log('再接続を要求されました');
+      ws.close();
+      connectEventSub(newUrl);
+    } else if(type === 'notification'){
+      handleNotification(msg.payload);
+    } else if(type === 'session_keepalive'){
+      // no-op
+    } else if(type === 'revocation'){
+      setStatus('err', '購読が取り消されました');
+      log('購読取り消し: ' + JSON.stringify(msg.payload.subscription.status));
+    }
+  };
+
+  ws.onclose = () => {
+    if(state.ws === ws){
+      setStatus('err', '切断されました');
+      log('WebSocket切断');
+    }
+  };
+  ws.onerror = () => log('WebSocketエラーが発生しました');
+}
+
+async function subscribeRedemption(sessionId){
+  const res = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + state.token,
+      'Client-Id': CLIENT_ID,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: 'channel.channel_points_custom_reward_redemption.add',
+      version: '1',
+      condition: { broadcaster_user_id: state.broadcasterId },
+      transport: { method: 'websocket', session_id: sessionId },
+    }),
+  });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error('購読作成失敗 (' + res.status + '): ' + body);
+  }
+  log('チャンネルポイント交換イベントの購読を作成しました');
+}
+
+function handleNotification(payload){
+  if(!payload.event) return;
+  const ev = payload.event;
+  const targetTitle = els.rewardTitle.value.trim().toLowerCase();
+  const rewardTitle = (ev.reward && ev.reward.title || '').trim().toLowerCase();
+  if(targetTitle && rewardTitle !== targetTitle){
+    log(`対象外の交換をスキップ: "${ev.reward && ev.reward.title}"`);
+    return;
+  }
+  addFeedItem(ev.user_name || ev.user_login || '(不明なユーザー)', ev.user_input || '(テキスト入力なし)');
+}
+
+function addFeedItem(userName, text){
+  els.emptyMsg.style.display = 'none';
+  const li = document.createElement('li');
+  const time = new Date().toLocaleTimeString('ja-JP');
+  li.innerHTML = `
+    <div class="meta">
+      <span class="user"></span>
+      <span class="time">${time}</span>
+    </div>
+    <div class="text"></div>
+    <button class="btn-copy">コピー</button>
+  `;
+  li.querySelector('.user').textContent = userName;
+  li.querySelector('.text').textContent = text;
+  const btn = li.querySelector('.btn-copy');
+  btn.addEventListener('click', async () => {
+    try{
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'コピーしました';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 1500);
+    }catch(e){
+      btn.textContent = 'コピー失敗';
+    }
+  });
+  els.feed.prepend(li);
+}
+
+handleRedirect();
+</script>
+</body>
+</html>
